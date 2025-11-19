@@ -190,7 +190,7 @@ SET_TARGET_PROPERTIES(hal-shared PROPERTIES
 IF(UNIX)
     target_link_libraries (hal
         -lpthread
-        -lrt
+	#-lrt
     )
 ENDIF(UNIX)
 

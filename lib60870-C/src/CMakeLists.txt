@@ -152,7 +152,7 @@ IF(UNIX)
     target_link_libraries (lib60870
         -lpthread
         -lm
-        -lrt
+	#-lrt
     )
 
   configure_file(
