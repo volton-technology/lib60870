@@ -8,10 +8,6 @@ A `runs-on` must be an ARC or self-hosted label. A `${{ }}` expression is
 allowed only when the workflow names no GitHub-hosted label anywhere, so a
 matrix or input cannot resolve to one. Reusable-workflow `runs-on` inputs
 are checked where the caller sets them.
-
-The one escape is a job that cannot run on Linux (an Apple toolchain, say):
-put `# allow-github-hosted: <reason>` on its runs-on line. The reason is
-required, so every exception is visible in review.
 """
 
 from __future__ import annotations
@@ -25,16 +21,16 @@ HOSTED = re.compile(
     r"|(?<![\w.-])blacksmith-[\w-]+|(?<![\w.-])(?:depot|namespace|warp|buildjet)-[\w-]+-(?:ubuntu|linux|macos)[\w-]*"
 )
 ALLOWED = re.compile(r"^(?:volton-arc[\w-]*|self-hosted)$")
-EXCEPTION = re.compile(r"#\s*allow-github-hosted:\s*\S.{9,}")
 RUNS_ON = re.compile(r"^(\s*)(?:-\s+)?runs-on:\s*(.*?)\s*$")
 
 
 def strip_comment(line: str) -> str:
+    """Return the line without a trailing YAML comment."""
     return re.sub(r"\s+#.*$", "", line)
 
 
 def labels(lines: list[str], start: int, indent: int, inline: str) -> list[str]:
-    """The label tokens of the runs-on whose key is on line `start`."""
+    """Return the label tokens of the runs-on whose key is on line `start`."""
     if inline:
         if "${{" in inline:
             return [inline]
@@ -59,14 +55,13 @@ def labels(lines: list[str], start: int, indent: int, inline: str) -> list[str]:
 
 
 def check(path: Path) -> list[str]:
+    """Return the problems in one workflow or action file."""
     lines = path.read_text().splitlines()
     code = [strip_comment(text) for text in lines]
     hosted_anywhere = any(HOSTED.search(text) for text in code)
     problems = []
     for number, line in enumerate(code):
         match = RUNS_ON.match(line)
-        if match and EXCEPTION.search(lines[number]):
-            continue
         if not match:
             if HOSTED.search(line) and re.search(
                 r"^\s*(?:-\s+)?(?:os|runner|runs-on|runner-label)s?:", line
@@ -95,6 +90,7 @@ def check(path: Path) -> list[str]:
 
 
 def main() -> int:
+    """Check every workflow and action under the given root."""
     root = Path(sys.argv[1] if len(sys.argv) > 1 else ".")
     github = root / ".github"
     files = sorted(github.glob("workflows/*.y*ml"))
