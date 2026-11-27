@@ -20,6 +20,8 @@ permissions:
 
 jobs:
   check:
+    # Fork PRs must not run on our self-hosted ARC runners (privileged, production nodes).
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: volton-arc-production
     timeout-minutes: 5
     steps:
